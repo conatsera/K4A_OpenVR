@@ -1,0 +1,31 @@
+
+add_library(k4a_driver_provider STATIC
+	"bone_provider.cpp"
+	"bone_provider.h"
+)
+
+target_include_directories(k4a_driver_provider PRIVATE
+	"${OPENVR_INCLUDE_DIR}"
+	"${K4A_INCLUDE_DIRS}"
+)
+
+target_link_libraries(k4a_driver_provider
+	PUBLIC
+		${K4A_LIBRARIES}
+		${OPENVR_LIBRARIES}
+)
+
+file(COPY ${K4A_DLL}
+	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${DEPTH_ENGINE_DLL}
+	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${K4ABT_DLL}
+	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${K4ABT_DNN}
+	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+file(COPY ${ONNX_RT_DLL}
+	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
