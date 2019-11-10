@@ -22,7 +22,7 @@ add_executable(calibrator
 
 target_link_libraries(calibrator PRIVATE Qt5::Widgets)
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
 find_file(QT_CORE_DLL
 	NAMES
 		Qt5Core.dll

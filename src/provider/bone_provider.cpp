@@ -130,8 +130,6 @@ K4ABoneProviderError K4ABoneProvider::Stop()
 		vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_rleg_id, m_rleg_pose, sizeof(vr::DriverPose_t));
 		vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_lleg_id, m_lleg_pose, sizeof(vr::DriverPose_t));
 
-		k4abt_tracker_destroy(m_tracker);
-
 		k4a_device_stop_cameras(m_device);
 
 		m_error = BONE_PROVIDER_NO_ERROR;
@@ -306,6 +304,8 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 				k4a_capture_release(capture);
 			}
 		}
+
+		k4abt_tracker_destroy(tracker);
 	}
 }
 
