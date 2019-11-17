@@ -40,8 +40,7 @@ int main(int argc, char* argv[])
 	}
 
 	QApplication a(argc, argv);
-	BoneCalibratorWindow w;
-	w.setOffsetMem(lpvK4ACalibrationMem);
+	BoneCalibratorWindow w(nullptr, lpvK4ACalibrationMem);
 	w.show();
 	return a.exec();
 }

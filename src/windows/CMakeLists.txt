@@ -6,3 +6,6 @@ target_include_directories(driver_k4a_openvr PUBLIC
 )
 
 target_link_libraries(driver_k4a_openvr k4a_driver)
+
+
+install(TARGETS driver_k4a_openvr DESTINATION k4a_openvr/bin/win64)

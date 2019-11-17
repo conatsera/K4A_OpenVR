@@ -164,7 +164,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 
 	if (k4abt_tracker_create(&context->m_calibration, ::K4ABT_TRACKER_CONFIG_DEFAULT, &tracker) == K4A_RESULT_SUCCEEDED)
 	{
-		k4abt_tracker_set_temporal_smoothing(tracker, 0.075F);
+		k4abt_tracker_set_temporal_smoothing(tracker, 0.025F);
 
 		if (!context->IsOnline())
 		{
@@ -320,8 +320,8 @@ void K4ABoneProvider::setup_bone(uint32_t unObjectId, k4abt_joint_id_t bone)
 	bone_pose.qDriverFromHeadRotation.y = 0.F;
 	bone_pose.qDriverFromHeadRotation.z = 0.F;
 
-	bone_pose.qWorldFromDriverRotation.w = 1.F;
-	bone_pose.qWorldFromDriverRotation.x = 0.F;
+	bone_pose.qWorldFromDriverRotation.w = std::cos(std::acos(-1) / 4);
+	bone_pose.qWorldFromDriverRotation.x = std::sin(std::acos(-1) / 4);
 	bone_pose.qWorldFromDriverRotation.y = 0.F;
 	bone_pose.qWorldFromDriverRotation.z = 0.F;
 

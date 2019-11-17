@@ -18,9 +18,14 @@ add_executable(calibrator
   bone_calibrator_window.cpp
   bone_calibrator_window.h
   bone_calibrator_window.ui
+  new_profile_dialog.cpp
+  new_profile_dialog.h
+  new_profile_dialog.ui
 )
 
 target_link_libraries(calibrator PRIVATE Qt5::Widgets)
+
+if (DEFINED Qt5_DIR)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
 find_file(QT_CORE_DLL
@@ -46,7 +51,9 @@ find_file(QT_WIDGET_DLL
 		${Qt5_DIR}/../../../bin/
 	NO_DEFAULT_PATH
 )
+
 else()
+
 find_file(QT_CORE_DLL
 	NAMES
 		Qt5Cored.dll
@@ -70,6 +77,7 @@ find_file(QT_WIDGET_DLL
 		${Qt5_DIR}/../../../bin/
 	NO_DEFAULT_PATH
 )
+
 endif()
 
 file(COPY ${QT_CORE_DLL}
@@ -80,3 +88,9 @@ file(COPY ${QT_GUI_DLL}
 
 file(COPY ${QT_WIDGET_DLL}
 	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endif()
+
+
+install(TARGETS calibrator RUNTIME DESTINATION k4a_openvr)
+
+install(FILES ${QT_CORE_DLL} ${QT_GUI_DLL} ${QT_WIDGET_DLL} DESTINATION k4a_openvr)

@@ -1,0 +1,10 @@
+{
+	"alwaysActivate": true,
+	"name" : "k4a_openvr",
+  "directory": "",
+	"resourceOnly" : false,
+	"hmd_presence" :
+	[
+		"045E.097C"
+	]
+}

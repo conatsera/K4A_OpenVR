@@ -21,7 +21,7 @@
     {
       "name": "x64-Release",
       "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
+      "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
@@ -33,6 +33,11 @@
           "name": "Qt5_DIR",
           "value": "D:/Qt/5.12.5/msvc2017_64/lib/cmake/Qt5",
           "type": "PATH"
+        },
+        {
+          "name": "REDIST",
+          "value": "TRUE",
+          "type": "BOOL"
         }
       ]
     }
