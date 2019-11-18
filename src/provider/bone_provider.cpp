@@ -313,7 +313,7 @@ void K4ABoneProvider::setup_bone(uint32_t unObjectId, k4abt_joint_id_t bone)
 {
 	vr::DriverPose_t bone_pose = { 0 };
 
-	bone_pose.poseTimeOffset = 0.F;
+	bone_pose.poseTimeOffset = 0.58F;
 
 	bone_pose.qDriverFromHeadRotation.w = 1.F;
 	bone_pose.qDriverFromHeadRotation.x = 0.F;
