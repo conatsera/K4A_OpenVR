@@ -17,3 +17,10 @@ Ensure CUDa, CUDNN, K4A SDK, and K4ABT binaries are in your system path or set t
 Copy `dnn_model_2_0.onnx` into `Steam\steamapps\common\SteamVR`
 
 Run `cmake --install`
+
+## Calibration
+
+Place the headset ontop of the kinect, facing the opposite direction, click calibrate.
+I'm still working out the kinks, so while rotation appears to be spot on (at least in my tests), the position seems to shift a bit between launches of WMR.
+Likely a result of a not great tracking scene behind my kinect, considering gyro would be unaffected by that. As such, position sliders are included to fix this.
+The fine tuning mode is for rotation only and I don't advise its use currently. It's pretty broken and may be scrapped if Oculus Insight and SteamVR universes don't have any quirks that effect rotation either.
