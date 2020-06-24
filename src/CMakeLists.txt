@@ -7,7 +7,7 @@ add_subdirectory("driver")
 
 add_subdirectory("provider")
 
-add_subdirectory("calibrator/calibrator")
+#add_subdirectory("calibrator")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	add_subdirectory("windows")
