@@ -7,10 +7,12 @@ Find K4A
 Locates the K4A redistributables and libraries. Both SDK and body tracking
 are searched
 #]=======================================================================]
-
+if (NOT DEFINED )
+set(K4A_SDK_VERSION "v1.4.0")
+endif()
 if (NOT DEFINED ${K4A_SDK_ROOT})
 find_path(K4A_SDK_ROOT
-	  "Azure Kinect SDK v1.3.0"
+	  "Azure Kinect SDK ${K4A_SDK_VERSION}"
     PATHS
       ${PROJECT_SOURCE_DIR}
       /usr/share
@@ -19,7 +21,7 @@ find_path(K4A_SDK_ROOT
       ${PROJECT_SOURCE_DIR}/..
       ENV ProgramFiles
     )
-set(K4A_SDK_ROOT "${K4A_SDK_ROOT}/Azure Kinect SDK v1.3.0")
+set(K4A_SDK_ROOT "${K4A_SDK_ROOT}/Azure Kinect SDK ${K4A_SDK_VERSION}")
 endif()
 
 if (NOT DEFINED ${K4ABT_ROOT})
