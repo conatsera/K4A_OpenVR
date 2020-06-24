@@ -1,5 +1,4 @@
 # K4A_OpenVR
-The calibrator is a temporary solution and currently requires sensor placement to be on either the X or Z axis.
 
 ## CMake variables
 Set to `Release` build for max optimization settings.
