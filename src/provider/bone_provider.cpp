@@ -49,6 +49,8 @@ K4ABoneProvider::K4ABoneProvider(DriverLog_t driver_log)
 		}
 		else
 		{
+			calibrationMem->update = false;
+
 			calibrationMem->x = 0.F;
 			calibrationMem->y = 0.F;
 			calibrationMem->z = 0.F;
@@ -144,6 +146,47 @@ K4ABoneProviderError K4ABoneProvider::Stop()
 	return m_error;
 }
 
+void UpdateCalibration(vr::DriverPose_t& waist, vr::DriverPose_t& rightFoot, vr::DriverPose_t& leftFoot)
+{
+	float x = calibrationMem->x;
+	float y = calibrationMem->y;
+	float z = calibrationMem->z;
+
+	float qw = calibrationMem->rotOffset.w;
+	float qx = calibrationMem->rotOffset.x;
+	float qy = calibrationMem->rotOffset.y;
+	float qz = calibrationMem->rotOffset.z;
+
+	waist.vecWorldFromDriverTranslation[0] = x;
+	waist.vecWorldFromDriverTranslation[1] = y;
+	waist.vecWorldFromDriverTranslation[2] = z;
+
+	rightFoot.vecWorldFromDriverTranslation[0] = x;
+	rightFoot.vecWorldFromDriverTranslation[1] = y;
+	rightFoot.vecWorldFromDriverTranslation[2] = z;
+
+	leftFoot.vecWorldFromDriverTranslation[0] = x;
+	leftFoot.vecWorldFromDriverTranslation[1] = y;
+	leftFoot.vecWorldFromDriverTranslation[2] = z;
+
+	waist.qWorldFromDriverRotation.w = qw;
+	waist.qWorldFromDriverRotation.x = qx;
+	waist.qWorldFromDriverRotation.y = qy;
+	waist.qWorldFromDriverRotation.z = qz;
+
+	rightFoot.qWorldFromDriverRotation.w = qw;
+	rightFoot.qWorldFromDriverRotation.x = qx;
+	rightFoot.qWorldFromDriverRotation.y = qy;
+	rightFoot.qWorldFromDriverRotation.z = qz;
+
+	leftFoot.qWorldFromDriverRotation.w = qw;
+	leftFoot.qWorldFromDriverRotation.x = qx;
+	leftFoot.qWorldFromDriverRotation.y = qy;
+	leftFoot.qWorldFromDriverRotation.z = qz;
+
+	calibrationMem->update = false;
+}
+
 void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 {
 	// Wait for every bone to be activated before attempting to populate pose data
@@ -206,96 +249,64 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 					}
 					else
 					{
-						if (k4abt_frame_get_num_bodies(body_frame) != 0)
+						if (int num_bodies = k4abt_frame_get_num_bodies(body_frame) != 0)
 						{
 							if (calibrationMem->update)
+								UpdateCalibration(hip_pose, rleg_pose, lleg_pose);
+
+							for (int i = 0; i < num_bodies; i++)
 							{
-								float x = calibrationMem->x;
-								float y = calibrationMem->y;
-								float z = calibrationMem->z;
+								k4abt_skeleton_t skeleton;
+								if (k4abt_frame_get_body_skeleton(body_frame, i, &skeleton) != K4A_RESULT_SUCCEEDED)
+								{
+									hip_pose.poseIsValid = false;
+									rleg_pose.poseIsValid = false;
+									lleg_pose.poseIsValid = false;
 
-								float qw = calibrationMem->rotOffset.w;
-								float qx = calibrationMem->rotOffset.x;
-								float qy = calibrationMem->rotOffset.y;
-								float qz = calibrationMem->rotOffset.z;
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
+								}
+								else
+								{
 
-								hip_pose.vecWorldFromDriverTranslation[0] = x;
-								hip_pose.vecWorldFromDriverTranslation[1] = y;
-								hip_pose.vecWorldFromDriverTranslation[2] = z;
+									hip_pose.poseIsValid = true;
 
-								rleg_pose.vecWorldFromDriverTranslation[0] = x;
-								rleg_pose.vecWorldFromDriverTranslation[1] = y;
-								rleg_pose.vecWorldFromDriverTranslation[2] = z;
+									hip_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.w;
+									hip_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.z;
+									hip_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.x;
+									hip_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.y;
 
-								lleg_pose.vecWorldFromDriverTranslation[0] = x;
-								lleg_pose.vecWorldFromDriverTranslation[1] = y;
-								lleg_pose.vecWorldFromDriverTranslation[2] = z;
+									hip_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.z / 1000;
+									hip_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.x / 1000;
+									hip_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.y / 1000;
 
-								hip_pose.qWorldFromDriverRotation.w = qw;
-								hip_pose.qWorldFromDriverRotation.x = qx;
-								hip_pose.qWorldFromDriverRotation.y = qy;
-								hip_pose.qWorldFromDriverRotation.z = qz;
-								                                     
-								rleg_pose.qWorldFromDriverRotation.w = qw;
-								rleg_pose.qWorldFromDriverRotation.x = qx;
-								rleg_pose.qWorldFromDriverRotation.y = qy;
-								rleg_pose.qWorldFromDriverRotation.z = qz;
+									rleg_pose.poseIsValid = true;
 
-								lleg_pose.qWorldFromDriverRotation.w = qw;
-								lleg_pose.qWorldFromDriverRotation.x = qx;
-								lleg_pose.qWorldFromDriverRotation.y = qy;
-								lleg_pose.qWorldFromDriverRotation.z = qz;
-							}
-							
-							k4abt_skeleton_t skeleton;
-							if (k4abt_frame_get_body_skeleton(body_frame, 0, &skeleton) != K4A_RESULT_SUCCEEDED)
-							{
-								hip_pose.poseIsValid = false;
-								rleg_pose.poseIsValid = false;
-								lleg_pose.poseIsValid = false;
+									rleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.w;
+									rleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.z;
+									rleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.x;
+									rleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.y;
 
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
-							}
-							else
-							{
-								hip_pose.poseIsValid = true;
+									rleg_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.z / 1000;
+									rleg_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.x / 1000;
+									rleg_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y / 1000;
 
-								hip_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.w;
-								hip_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.z;
-								hip_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.x;
-								hip_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.y;
+									lleg_pose.poseIsValid = true;
 
-								hip_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.z / 1000;
-								hip_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.x / 1000;
-								hip_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.y / 1000;
+									lleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.w;
+									lleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.z;
+									lleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.x;
+									lleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.y;
 
-								rleg_pose.poseIsValid = true;
+									lleg_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.z / 1000;
+									lleg_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.x / 1000;
+									lleg_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.y / 1000;
 
-								rleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.w;
-								rleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.z;
-								rleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.x;
-								rleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.y;
-
-								rleg_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.z / 1000;
-								rleg_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.x / 1000;
-								rleg_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.y / 1000;
-
-								lleg_pose.poseIsValid = true;
-
-								lleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.w;
-								lleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.z;
-								lleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.x;
-								lleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.y;
-
-								lleg_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.z / 1000;
-								lleg_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.x / 1000;
-								lleg_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.y / 1000;
-
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
-								vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
+									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
+								}
 							}
 						}
 						k4abt_frame_release(body_frame);
@@ -313,7 +324,7 @@ void K4ABoneProvider::setup_bone(uint32_t unObjectId, k4abt_joint_id_t bone)
 {
 	vr::DriverPose_t bone_pose = { 0 };
 
-	bone_pose.poseTimeOffset = 0.58F;
+	bone_pose.poseTimeOffset = 0.08F;
 
 	bone_pose.qDriverFromHeadRotation.w = 1.F;
 	bone_pose.qDriverFromHeadRotation.x = 0.F;

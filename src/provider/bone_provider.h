@@ -54,9 +54,9 @@ inline vr::HmdQuaternion_t QuaternionProduct(vr::HmdQuaternion_t& quata, k4a_qua
 	return quat;
 }
 
-inline vr::HmdQuaternion_t QuaternionProduct(k4a_quaternion_t& quata, k4a_quaternion_t& quatb)
+inline vr::HmdQuaternionf_t QuaternionProduct(k4a_quaternion_t& quata, k4a_quaternion_t& quatb)
 {
-	vr::HmdQuaternion_t quat;
+	vr::HmdQuaternionf_t quat;
 	quat.w = ((quata.wxyz.w * quatb.wxyz.w) - (quata.wxyz.x * quatb.wxyz.x) - (quata.wxyz.y * quatb.wxyz.y) - (quata.wxyz.z * quatb.wxyz.z));
 	quat.x = ((quata.wxyz.w * quatb.wxyz.x) + (quata.wxyz.x * quatb.wxyz.w) + (quata.wxyz.y * quatb.wxyz.z) - (quata.wxyz.z * quatb.wxyz.y));
 	quat.y = ((quata.wxyz.w * quatb.wxyz.y) - (quata.wxyz.x * quatb.wxyz.z) + (quata.wxyz.y * quatb.wxyz.w) + (quata.wxyz.z * quatb.wxyz.x));
