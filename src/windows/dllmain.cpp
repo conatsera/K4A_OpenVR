@@ -30,6 +30,8 @@ HMD_DLL_EXPORT void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCo
 		return &g_watchdogDriverNull;
 	}
 
+	(*pReturnCode) = vr::VRInitError_None;
+
 	if (pReturnCode)
 		* pReturnCode = vr::VRInitError_Init_InterfaceNotFound;
 }
