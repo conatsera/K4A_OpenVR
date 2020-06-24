@@ -33,7 +33,7 @@ endif()
 add_definitions(-DUNICODE)
 
 include("cmake/FindK4A.cmake")
-find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+include("cmake/imgui.cmake")
 
 add_subdirectory("extern")
 
@@ -81,9 +81,9 @@ add_subdirectory ("src")
 install(FILES driver.vrdrivermanifest
 	DESTINATION k4a_openvr)
 
-string(REPLACE "/" "\\\\\\\\" ESCAPED_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/k4a_openvr)
+#string(REPLACE "/" "\\\\\\\\" ESCAPED_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/k4a_openvr)
 
-get_filename_component(STEAM_VRPATHREG_EXE "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam;InstallPath]/steamapps/common/SteamVR/bin/win64/vrpathreg.exe" ABSOLUTE CACHE)
+#get_filename_component(STEAM_VRPATHREG_EXE "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam;InstallPath]/steamapps/common/SteamVR/bin/win64/vrpathreg.exe" ABSOLUTE CACHE)
 
-install(CODE
-"execute_process(COMMAND \"${STEAM_VRPATHREG_EXE}\" adddriver \"${ESCAPED_INSTALL_PATH}\")")
+#install(CODE
+#"execute_process(COMMAND \"${STEAM_VRPATHREG_EXE}\" adddriver \"${ESCAPED_INSTALL_PATH}\")")
