@@ -70,23 +70,27 @@
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
+    <IncludePath>C:\Program Files\Azure Kinect SDK v1.4.0\sdk\include;C:\Program Files\Azure Kinect Body Tracking SDK\sdk\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <SourcePath>$(VC_SourcePath);..\..\extern\imgui\src;..\..\extern\imgui\src\examples;..\..\extern\openvr\src</SourcePath>
     <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
+    <IncludePath>C:\Program Files\Azure Kinect SDK v1.4.0\sdk\include;C:\Program Files\Azure Kinect Body Tracking SDK\sdk\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
+    <IncludePath>C:\Program Files\Azure Kinect SDK v1.4.0\sdk\include;C:\Program Files\Azure Kinect Body Tracking SDK\sdk\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <SourcePath>$(VC_SourcePath);..\..\extern\imgui\src;..\..\extern\imgui\src\examples;..\..\extern\openvr\src</SourcePath>
     <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
+    <IncludePath>C:\Program Files\Azure Kinect SDK v1.4.0\sdk\include;C:\Program Files\Azure Kinect Body Tracking SDK\sdk\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -94,44 +94,48 @@ vr::HmdQuaternion_t GetRotation(vr::TrackedDevicePose_t matrix)
     return q;
 }
 
-/*
-inline vr::HmdQuaternion_t OffsetCalibration(vr::HmdQuaternion_t& quat)
-{
-    vr::HmdQuaternion_t outQuat;
-    outQuat.w = ((std::cos(std::acos(-1) / 4) * quat.w) - (std::sin(std::acos(-1) / 4) * quat.x) - (0.0 * quat.y) - (0.0 * quat.z));
-    outQuat.x = ((std::cos(std::acos(-1) / 4) * quat.x) + (std::sin(std::acos(-1) / 4) * quat.w) + (0.0 * quat.z) - (0.0 * quat.y));
-    outQuat.y = ((std::cos(std::acos(-1) / 4) * quat.y) - (std::sin(std::acos(-1) / 4) * quat.z) + (0.0 * quat.w) + (0.0 * quat.x));
-    outQuat.z = ((std::cos(std::acos(-1) / 4) * quat.z) + (std::sin(std::acos(-1) / 4) * quat.y) - (0.0 * quat.x) + (0.0 * quat.w));
-    return outQuat;
-}
-
-inline vr::HmdQuaternion_t Offset2Calibration(vr::HmdQuaternion_t& quat)
-{
-    vr::HmdQuaternion_t outQuat;
-    outQuat.w = ((quat.w * std::cos(std::acos(-1) / 4)) - (quat.x * 0.0) - (quat.y * 0.0) - (quat.z * std::sin(std::acos(-1) / 4)));
-    outQuat.x = ((quat.w * 0.0) + (quat.x * std::cos(std::acos(-1) / 4)) + (quat.y * std::sin(std::acos(-1) / 4)) - (quat.z * 0.0));
-    outQuat.y = ((quat.w * 0.0) - (quat.x * std::sin(std::acos(-1) / 4)) + (quat.y * std::cos(std::acos(-1) / 4)) + (quat.z * 0.0));
-    outQuat.z = ((quat.w * std::sin(std::acos(-1) / 4)) + (quat.x * 0.0) - (quat.y * 0.0) + (quat.z * std::cos(std::acos(-1) / 4)));
-    return outQuat;
-}*/
-
-vr::HmdQuaternion_t offsetQuat1{
+vr::HmdQuaternion_t offsetQuatZ{
+    std::cos(std::acos(-1) / -4),
+    0.0,
+    0.0,
+    std::sin(std::acos(-1) / -4)
+};
+vr::HmdQuaternion_t offsetQuatY{
+    std::cos(std::acos(-1) / 4),
+    0.0,
+    std::sin(std::acos(-1) / 4),
+    0.0
+};
+vr::HmdQuaternion_t offsetQuatX{
     std::cos(std::acos(-1) / 4),
     std::sin(std::acos(-1) / 4),
     0.0,
     0.0
 };
+
+vr::HmdQuaternion_t offsetQuat1{
+    std::cos(std::acos(-1) / -4),
+    0.0,
+    0.0,
+    std::sin(std::acos(-1) / -4)
+};
 vr::HmdQuaternion_t offsetQuat2{
     std::cos(std::acos(-1) / 4),
     0.0,
-    0.0,
-    std::sin(std::acos(-1) / 4)
+    std::sin(std::acos(-1) / 4),
+    0.0
 };
 vr::HmdQuaternion_t offsetQuat3{
+    std::cos(std::acos(-1) / 2),
+    0.0,
+    0.0,
+    std::sin(std::acos(-1) / 2)
+};
+vr::HmdQuaternion_t offsetQuat4{
     std::cos((std::acos(-1) / -4)* (7.3 / 90.0)),
     0.0,
-    std::sin((std::acos(-1) / -4)* (7.3 / 90.0)),
-    0.0
+    0.0,
+    std::sin((std::acos(-1) / -4)* (7.3 / 90.0))
 };
 
 inline vr::HmdQuaternion_t QuaternionProduct(vr::HmdQuaternion_t& quata, vr::HmdQuaternion_t& quatb)
@@ -284,8 +288,15 @@ int main(int, char**)
     bool fineTuningEnabled = false;
 
     bool fineTuningRefQuatValid = false;
+    vr::TrackedDevicePose_t refPose;
     vr::HmdQuaternion_t fineTuningRefQuat = { 1.0, 0.0, 0.0, 0.0 };
     vr::HmdQuaternion_t fineCalibrationRotation = { 1.0, 0.0, 0.0, 0.0 };
+    int X = 0;
+    bool Xneg = false;
+    int Y = 0;
+    bool Yneg = false;
+    int Z = 0;
+    bool Zneg = false;
 
     // Main loop
     MSG msg;
@@ -323,22 +334,42 @@ int main(int, char**)
             ImGui::Begin("Calibrate");
 
             ImGui::SetWindowPos(ImVec2{ 0, 0 });
-            ImGui::SetWindowSize(ImVec2(g_currentResolution.x, g_currentResolution.y / 2));
-
-
-            if (ImGui::SliderFloat("position.x", &calibrationData->x, -1.0f, 1.0f))
-                calibrationData->update = true;
-            if (ImGui::SliderFloat("position.y", &calibrationData->y, 0.0f, 1.0f))
-                calibrationData->update = true;
-            if (ImGui::SliderFloat("position.z", &calibrationData->z, -2.0f, 2.0f))
-                calibrationData->update = true;
+            ImGui::SetWindowSize(ImVec2(g_currentResolution.x, g_currentResolution.y));
 
             vr::VRControllerState_t hmdControllerState;
             vr::TrackedDevicePose_t hmdPose;
-            vr::VRSystem()->GetControllerStateWithPose(vr::ETrackingUniverseOrigin::TrackingUniverseRawAndUncalibrated,
+            vr::VRSystem()->GetControllerStateWithPose(vr::ETrackingUniverseOrigin::TrackingUniverseStanding,
                 vr::k_unTrackedDeviceIndex_Hmd, &hmdControllerState, sizeof(hmdControllerState), &hmdPose);
 
             ImGui::Checkbox("Activate fine tuning", &fineTuningEnabled);
+           
+            vr::HmdQuaternion_t quat = GetRotation(hmdPose);
+
+            ImGui::Text("{ %.4f, %.4f, %.4f }",
+                hmdPose.mDeviceToAbsoluteTracking.m[0][3],
+                hmdPose.mDeviceToAbsoluteTracking.m[1][3],
+                hmdPose.mDeviceToAbsoluteTracking.m[2][3]);
+
+            ImGui::Text("{ %.4f, %.4f, %.4f, %.4f }",
+                quat.w,
+                quat.x,
+                quat.y,
+                quat.z);
+
+            ImGui::RadioButton("X", &X, 0);
+            ImGui::RadioButton("Y", &X, 1);
+            ImGui::RadioButton("Z", &X, 2);
+            /*ImGui::Checkbox("X Negative", &Xneg);
+
+            ImGui::RadioButton("YX", &Y, 0);
+            ImGui::RadioButton("YY", &Y, 1);
+            ImGui::RadioButton("YZ", &Y, 2);
+            ImGui::Checkbox("Y Negative", &Yneg);
+
+            ImGui::RadioButton("ZX", &Z, 0);
+            ImGui::RadioButton("ZY", &Z, 1);
+            ImGui::RadioButton("ZZ", &Z, 2);
+            ImGui::Checkbox("Z Negative", &Zneg);*/
 
             if (fineTuningEnabled)
             {
@@ -349,29 +380,34 @@ int main(int, char**)
                 {
                     vr::VRControllerState_t rightHandControllerState;
                     vr::TrackedDevicePose_t rightHandPose;
-                    vr::VRSystem()->GetControllerStateWithPose(vr::ETrackingUniverseOrigin::TrackingUniverseRawAndUncalibrated,
+                    vr::VRSystem()->GetControllerStateWithPose(vr::ETrackingUniverseOrigin::TrackingUniverseStanding,
                         rightHandIndex, &rightHandControllerState, sizeof(rightHandControllerState), &rightHandPose);
 
-                    if (rightHandControllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Trigger))
+                    if (rightHandControllerState.ulButtonPressed == (vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Trigger) | vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_Grip)))
+                    {
+                        if (refPose.bPoseIsValid == true)
+                        {
+                            calibrationData->x = calibrationData->x - (refPose.mDeviceToAbsoluteTracking.m[0][3] - rightHandPose.mDeviceToAbsoluteTracking.m[0][3]);
+                            calibrationData->y = calibrationData->y - (refPose.mDeviceToAbsoluteTracking.m[1][3] - rightHandPose.mDeviceToAbsoluteTracking.m[1][3]);
+                            calibrationData->z = calibrationData->z - (refPose.mDeviceToAbsoluteTracking.m[2][3] - rightHandPose.mDeviceToAbsoluteTracking.m[2][3]);
+
+                            calibrationData->update = true;
+                        }
+                        refPose = rightHandPose;
+                    }
+                    else if (rightHandControllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Trigger))
                     {
                         if (!fineTuningRefQuatValid)
                         {
                             fineTuningRefQuat = GetRotation(rightHandPose);
-                            fineTuningRefQuat = QuaternionProduct(offsetQuat1, fineTuningRefQuat);
-                            fineTuningRefQuat = QuaternionProduct(fineTuningRefQuat, offsetQuat2);
                             fineTuningRefQuatValid = true;
                         }
-                        
-                        vr::HmdQuaternion_t quat = GetRotation(rightHandPose);
 
-                        quat = QuaternionProduct(offsetQuat1, quat);
-                        quat = QuaternionProduct(quat, offsetQuat2);
+                        vr::HmdQuaternion_t quat = GetRotation(rightHandPose);
 
                         fineCalibrationRotation = QuaternionProduct(quat, QuaternionInverse(fineTuningRefQuat));
 
                         fineTuningRefQuat = GetRotation(rightHandPose);
-                        fineTuningRefQuat = QuaternionProduct(offsetQuat1, fineTuningRefQuat);
-                        fineTuningRefQuat = QuaternionProduct(fineTuningRefQuat, offsetQuat2);
 
                         vr::HmdQuaternion_t currentCalibration = {
                             calibrationData->rotOffset.w,
@@ -379,6 +415,34 @@ int main(int, char**)
                             calibrationData->rotOffset.y,
                             calibrationData->rotOffset.z
                         };
+
+                        switch (X)
+                        {
+                        case 0:
+                            fineCalibrationRotation = vr::HmdQuaternion_t{
+                            fineCalibrationRotation.w,
+                            fineCalibrationRotation.z,
+                            0.0,
+                            0.0
+                            };
+                            break;
+                        case 1:
+                            fineCalibrationRotation = vr::HmdQuaternion_t{
+                            fineCalibrationRotation.w,
+                            0.0,
+                            0.0,
+                            fineCalibrationRotation.y
+                            };
+                            break;
+                        case 2:
+                            fineCalibrationRotation = vr::HmdQuaternion_t{
+                            fineCalibrationRotation.w,
+                            0.0,
+                            fineCalibrationRotation.x,
+                            0.0
+                            };
+                            break;
+                        }
 
                         vr::HmdQuaternion_t fineTunedCalibration = QuaternionProduct(currentCalibration, fineCalibrationRotation);
 
@@ -390,47 +454,37 @@ int main(int, char**)
                         calibrationData->update = true;
                     }
                     else
+                    {
                         fineTuningRefQuatValid = false;
+                        refPose.bPoseIsValid = false;
+                    }
                 }
             }
 
-            vr::HmdQuaternion_t quat = GetRotation(hmdPose);
-
-            ImGui::Text("{ %.4f, %.4f, %.4f }",
-                hmdPose.mDeviceToAbsoluteTracking.m[0][3],
-                hmdPose.mDeviceToAbsoluteTracking.m[1][3],
-                hmdPose.mDeviceToAbsoluteTracking.m[2][3]);
-            ImGui::Text("{ %.4f, %.4f, %.4f, %.4f }",
-                quat.x,
-                quat.y,
-                quat.z,
-                quat.w);
-
             if (ImGui::Button("Calibrate"))
             {
-                calibrationData->x = hmdPose.mDeviceToAbsoluteTracking.m[0][3];
-                calibrationData->y = hmdPose.mDeviceToAbsoluteTracking.m[1][3] - 0.2;
-                calibrationData->z = hmdPose.mDeviceToAbsoluteTracking.m[2][3] - 0.1;
 
-                quat = QuaternionProduct(offsetQuat1, quat);
+                quat = QuaternionProduct(quat, offsetQuat1);
                 quat = QuaternionProduct(quat, offsetQuat2);
                 quat = QuaternionProduct(quat, offsetQuat3);
+                quat = QuaternionProduct(quat, offsetQuat4);
 
                 calibrationData->rotOffset.x = quat.x;
                 calibrationData->rotOffset.y = quat.y;
                 calibrationData->rotOffset.z = quat.z;
                 calibrationData->rotOffset.w = quat.w;
 
+                calibrationData->x = hmdPose.mDeviceToAbsoluteTracking.m[0][3];
+                calibrationData->y = hmdPose.mDeviceToAbsoluteTracking.m[1][3];
+                calibrationData->z = hmdPose.mDeviceToAbsoluteTracking.m[2][3];
+
                 calibrationData->update = true;
             }
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
             ImGui::End();
         }
 
         // Error log window
-        {
+       /* {
             ImGui::Begin("Error Log");
             ImGui::SetWindowPos(ImVec2( 0, g_currentResolution.y / 2 ));
             ImGui::SetWindowSize(ImVec2( g_currentResolution.x, g_currentResolution.y / 2 ));
@@ -440,7 +494,7 @@ int main(int, char**)
             }
             ImGui::End();
         }
-
+        */
         // Rendering
         FrameContext* frameCtxt = WaitForNextFrameResources();
         UINT backBufferIdx = g_pSwapChain->GetCurrentBackBufferIndex();

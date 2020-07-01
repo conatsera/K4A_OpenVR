@@ -63,6 +63,8 @@
     </Font>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\extern\openvr\src\bin\win64\openvr_api.dll" />
+    <None Include="..\..\extern\openvr\src\bin\win64\openvr_api.dll">
+      <Filter>sources</Filter>
+    </None>
   </ItemGroup>
 </Project>
