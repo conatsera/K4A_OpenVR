@@ -228,6 +228,10 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 		vr::DriverPose_t hip_pose = context->m_hip_pose;
 		vr::DriverPose_t rleg_pose = context->m_rleg_pose;
 		vr::DriverPose_t lleg_pose = context->m_lleg_pose;
+		double rotationChange;
+		double vectorChange = 0.0;
+		double maxChange = 1.0;
+		float smoothing = 0.0f;
 
 		while (context->m_online)
 		{
@@ -253,6 +257,11 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 						{
 							if (calibrationMem->update)
 								UpdateCalibration(hip_pose, rleg_pose, lleg_pose);
+								if (!calibrationMem->autoSmooth)
+									k4abt_tracker_set_temporal_smoothing(tracker, calibrationMem->m_smoothing);
+							// ???TODO: put autoSmooth on a different thread for efficiency???
+							if (calibrationMem->autoSmooth)
+								k4abt_tracker_set_temporal_smoothing(tracker, (((vectorChange / maxChange) > calibrationMem->m_smoothing) ? (smoothing -= 0.8 * smoothing) : smoothing += 0.4 * ((1 - smoothing) / 1)));
 
 							for (int i = 0; i < num_bodies; i++)
 							{
@@ -283,6 +292,9 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 
 									rleg_pose.poseIsValid = true;
 
+									if(calibrationMem->autoSmooth)
+										vectorChange = abs(rleg_pose.vecPosition[2] - skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y / 1000);
+
 									rleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.w;
 									rleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.z;
 									rleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.x;
@@ -293,6 +305,9 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 									rleg_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y / 1000;
 
 									lleg_pose.poseIsValid = true;
+
+									if (calibrationMem->autoSmooth)
+										vectorChange += abs(lleg_pose.vecPosition[2] - skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y / 1000);
 
 									lleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.w;
 									lleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.z;
@@ -306,6 +321,9 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
+
+									if(calibrationMem->autoSmooth)
+										maxChange = max(vectorChange, (maxChange - (maxChange * 0.98)));
 								}
 							}
 						}

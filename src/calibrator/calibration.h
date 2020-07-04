@@ -21,10 +21,12 @@ namespace Calibration {
 	typedef struct _calibration_data
 	{
 		bool update;
+		bool autoSmooth;
 
 		float x;
 		float y;
 		float z;
+		float m_smoothing;
 
 		joint_offset_t rotOffset;
 	} calibration_data_t;
