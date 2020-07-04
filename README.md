@@ -18,7 +18,9 @@ Ensure CUDa, CUDNN, K4A SDK, and K4ABT binaries are in your system path or set t
 Run `cmake --install` or install with your IDE
 
 Move "dnn_model_2_0.onnx" from the azure body tracking sdk to the `k4a_openvr` directory
+
 Move the `k4a_openvr` folder to "C:\Program Files "<your install directory>\Steam\steamapps\common\SteamVR\drivers"
+  
 NOTE:
 For developers, it is easier to use "<your install directory>\Steam\steamapps\common\SteamVR\bin\win64\vrpathreg.exe" to add the `k4a_openvr` directory to steamVR's path instead of moving the folder over every new build.
 
