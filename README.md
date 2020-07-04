@@ -28,6 +28,8 @@ When steamVR starts, the steam trackers should show up in settings. Make sure to
 
 ## Calibration
 
+The calibration tool is found in the calibration folder. It must be built seperately. After it is built, there should be a release folder in the project folder that contains the application. This must be ran when steamVR is running. After calibrations have been made the program can be closed.
+
 Place the headset ontop of the kinect, facing the opposite direction, click calibrate.
 I'm still working out the kinks, so while rotation appears to be spot on (at least in my tests), the position seems to shift a bit between launches of WMR.
 Likely a result of a not great tracking scene behind my kinect, considering gyro would be unaffected by that.
