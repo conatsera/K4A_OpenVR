@@ -25,6 +25,7 @@ typedef struct _calibration_data
 {
 	bool update;
 	bool autoSmooth;
+	bool moreTrackers;
 
 	float x;
 	float y;
@@ -151,10 +152,22 @@ protected:
 	vr::DriverPose_t m_hip_pose = { 0 };
 	vr::DriverPose_t m_rleg_pose = { 0 };
 	vr::DriverPose_t m_lleg_pose = { 0 };
+	vr::DriverPose_t m_rknee_pose = { 0 };
+	vr::DriverPose_t m_lknee_pose = { 0 };
+	vr::DriverPose_t m_relbow_pose = { 0 };
+	vr::DriverPose_t m_lelbow_pose = { 0 };
+	vr::DriverPose_t m_chest_pose = { 0 };
+	
 
 	uint32_t m_hip_id = vr::k_unTrackedDeviceIndexInvalid;
 	uint32_t m_rleg_id = vr::k_unTrackedDeviceIndexInvalid;
 	uint32_t m_lleg_id = vr::k_unTrackedDeviceIndexInvalid;
+	uint32_t m_rknee_id = vr::k_unTrackedDeviceIndexInvalid;
+	uint32_t m_lknee_id = vr::k_unTrackedDeviceIndexInvalid;
+	uint32_t m_relbow_id = vr::k_unTrackedDeviceIndexInvalid;
+	uint32_t m_lelbow_id = vr::k_unTrackedDeviceIndexInvalid;
+	uint32_t m_chest_id = vr::k_unTrackedDeviceIndexInvalid;
+	
 
 	bool m_calibrated = false;
 };

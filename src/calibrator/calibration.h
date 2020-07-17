@@ -22,6 +22,7 @@ namespace Calibration {
 	{
 		bool update;
 		bool autoSmooth;
+		bool moreTrackers;
 
 		float x;
 		float y;

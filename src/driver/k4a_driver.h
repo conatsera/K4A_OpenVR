@@ -69,7 +69,12 @@ enum K4ATrackedBone {
 	K4ATrackedBoneLeftFoot = 3,
 	K4ATrackedBoneRightHand = 4,
 	K4ATrackedBoneLeftHand = 5,
-	K4ATrackedBoneHead = 6
+	K4ATrackedBoneHead = 6,
+	K4ATrackedBoneChest = 7,
+	K4ATrackedBoneRightElbow = 8,
+	K4ATrackedBoneLeftElbow = 9,
+	k4ATrackedBoneRightKnee = 10,
+	K4ATrackedBoneLeftKnee = 11
 };
 
 class K4ATrackerDriver : public vr::ITrackedDeviceServerDriver {
@@ -137,6 +142,11 @@ private:
 	K4ATrackerDriver* m_pHipTracker = nullptr;
 	K4ATrackerDriver* m_pRightFootTracker = nullptr;
 	K4ATrackerDriver* m_pLeftFootTracker = nullptr;
+	K4ATrackerDriver* m_pChestTracker = nullptr;
+	K4ATrackerDriver* m_pRightElbowTracker = nullptr;
+	K4ATrackerDriver* m_pLeftElbowTracker = nullptr;
+	K4ATrackerDriver* m_pRightKneeTracker = nullptr;
+	K4ATrackerDriver* m_pLeftKneeTracker = nullptr;
 
 	std::future<void> m_bone_started;
 };

@@ -41,6 +41,26 @@ K4ATrackerDriver::K4ATrackerDriver(K4ATrackedBone bone, K4ABoneProvider* bone_pr
 		m_sSerialNumber = "LFoot";
 		m_sModelNumber = "K4A_DK_BNODE_LFOOT";
 	}
+	else if (bone == K4ATrackedBoneChest) {
+		m_sSerialNumber = "Chest";
+		m_sModelNumber = "K4A_DK_BNODE_CHEST";
+	}
+	else if (bone == K4ATrackedBoneRightElbow) {
+		m_sSerialNumber = "RElbow";
+		m_sModelNumber = "K4A_DK_BNODE_RELBOW";
+	}
+	else if (bone == K4ATrackedBoneLeftElbow) {
+		m_sSerialNumber = "LElbow";
+		m_sModelNumber = "K4A_DK_BNODE_LELBOW";
+	}
+	else if (bone == k4ATrackedBoneRightKnee) {
+		m_sSerialNumber = "RKnee";
+		m_sModelNumber = "K4A_DK_BNODE_RKNEE";
+	}
+	else if (bone == K4ATrackedBoneLeftKnee) {
+		m_sSerialNumber = "LKnee";
+		m_sModelNumber = "K4A_DK_BNODE_LKNEE";
+	}
 }
 
 
@@ -54,15 +74,25 @@ vr::EVRInitError K4ATrackerDriver::Activate(vr::TrackedDeviceIndex_t unObjectId)
 		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_FOOT_RIGHT);
 	else if (m_bone == K4ATrackedBoneLeftFoot)
 		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_FOOT_LEFT);
+	else if (m_bone == K4ATrackedBoneChest)
+		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_SPINE_CHEST);
+	else if (m_bone == K4ATrackedBoneRightElbow)
+		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_ELBOW_RIGHT);
+	else if (m_bone == K4ATrackedBoneLeftElbow)
+		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_ELBOW_LEFT);
+	else if (m_bone == k4ATrackedBoneRightKnee)
+		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_KNEE_RIGHT);
+	else if (m_bone == K4ATrackedBoneLeftKnee)
+		m_bone_provider->setup_bone(unObjectId, K4ABT_JOINT_KNEE_LEFT);
 
 	vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, m_sModelNumber.c_str());
-	vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "Kinect for Azure Bone Node");
+	vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{k4a_openvr}/rendermodels/vr_tracker_vive_1_0/vr_tracker_vive_1_0.obj");
 
 	vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_CurrentUniverseId_Uint64, 9834566758443);
 
 	// this file tells the UI what to show the user for binding this controller as well as what default bindings should
 	// be for legacy or other apps
-	// TODO: vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_InputProfilePath_String, "{sample}/input/mycontroller_profile.json");
+	// vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_InputProfilePath_String, "{k4a_openvr}/resources/input/vive_tracker_profile.json");
 
 	return vr::VRInitError_None;
 }
@@ -83,6 +113,21 @@ vr::EVRInitError K4AServerDriver::Init(vr::IVRDriverContext* pDriverContext) {
 
 	m_pLeftFootTracker = new K4ATrackerDriver(K4ATrackedBone::K4ATrackedBoneLeftFoot, m_bone_provider);
 	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pLeftFootTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pLeftFootTracker);
+
+	m_pChestTracker = new K4ATrackerDriver(K4ATrackedBone::K4ATrackedBoneChest, m_bone_provider);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pChestTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pChestTracker);
+
+	m_pRightElbowTracker = new K4ATrackerDriver(K4ATrackedBone::K4ATrackedBoneRightElbow, m_bone_provider);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pRightElbowTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pRightElbowTracker);
+
+	m_pLeftElbowTracker = new K4ATrackerDriver(K4ATrackedBone::K4ATrackedBoneLeftElbow, m_bone_provider);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pLeftElbowTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pLeftElbowTracker);
+
+	m_pRightKneeTracker = new K4ATrackerDriver(K4ATrackedBone::k4ATrackedBoneRightKnee, m_bone_provider);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pRightKneeTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pRightKneeTracker);
+
+	m_pLeftKneeTracker = new K4ATrackerDriver(K4ATrackedBone::K4ATrackedBoneLeftKnee, m_bone_provider);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pLeftKneeTracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, m_pLeftKneeTracker);
 
 	// SteamVR really doesn't like long ops on its child threads
 	m_bone_started = std::async(std::launch::async, [&] { m_bone_provider->Start(); });

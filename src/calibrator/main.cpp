@@ -345,6 +345,7 @@ int main(int, char**)
             if (ImGui::SliderFloat("Smoothing", &calibrationData->m_smoothing, 0.0f, 1.0f))
                 calibrationData->update = true;
             ImGui::Checkbox("Activate Auto Smoothing(experimental)", &calibrationData->autoSmooth);
+            ImGui::Checkbox("Activate more trackers(experimental, mega lag)", &calibrationData->moreTrackers);
             vr::HmdQuaternion_t quat = GetRotation(hmdPose);
 
             ImGui::Text("{ %.4f, %.4f, %.4f }",
