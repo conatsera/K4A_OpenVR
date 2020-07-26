@@ -342,9 +342,9 @@ int main(int, char**)
                 vr::k_unTrackedDeviceIndex_Hmd, &hmdControllerState, sizeof(hmdControllerState), &hmdPose);
 
             ImGui::Checkbox("Activate fine tuning", &fineTuningEnabled);
-            if (ImGui::SliderFloat("Smoothing", &calibrationData->m_smoothing, 0.0f, 1.0f))
-                calibrationData->update = true;
-            ImGui::Checkbox("Activate Auto Smoothing(experimental)", &calibrationData->autoSmooth);
+            //if (ImGui::SliderFloat("Smoothing", &calibrationData->m_smoothing, 0.0f, 1.0f))
+            //    calibrationData->update = true;
+            //ImGui::Checkbox("Activate Auto Smoothing(experimental)", &calibrationData->autoSmooth);
             ImGui::Checkbox("Activate more trackers(experimental, mega lag)", &calibrationData->moreTrackers);
             vr::HmdQuaternion_t quat = GetRotation(hmdPose);
 
