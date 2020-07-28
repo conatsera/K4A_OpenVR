@@ -1,10 +1,14 @@
 #include <openvr_driver.h>
-//#include <thread>
+#include <thread>
 #include <math.h>
 #include "bone_provider.h"
+#include "bone_filter.h"
+#include <time.h>
 #include <fstream>
 #include <string>
 #include <windows.h>
+
+
 
 
 static TCHAR calibrationMemName[] = TEXT("BoneCalibrationMemmap");
@@ -249,13 +253,13 @@ void UpdateCalibration(vr::DriverPose_t& waist, vr::DriverPose_t& rightFoot, vr:
 	leftKnee.qWorldFromDriverRotation.y = qy;
 	leftKnee.qWorldFromDriverRotation.z = qz;
 
-	
+
 	chest.qWorldFromDriverRotation.w = qw;
 	chest.qWorldFromDriverRotation.x = qx;
 	chest.qWorldFromDriverRotation.y = qy;
 	chest.qWorldFromDriverRotation.z = qz;
-	
-	
+
+
 
 	calibrationMem->update = false;
 }
@@ -279,14 +283,15 @@ void multiThreadedProcess(vr::DriverPose_t* rleg_pose, bool* threadDataReady, bo
 			*threadDataReady = true;
 		}
 	}
-	
+
 }
 */
 
 void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 {
+
 	// Wait for every bone to be activated before attempting to populate pose data
-	while (context->m_hip_id == vr::k_unTrackedDeviceIndexInvalid || context->m_rleg_id == vr::k_unTrackedDeviceIndexInvalid || context->m_lleg_id == vr::k_unTrackedDeviceIndexInvalid || context->m_relbow_id == vr::k_unTrackedDeviceIndexInvalid || context->m_lelbow_id == vr::k_unTrackedDeviceIndexInvalid 
+	while (context->m_hip_id == vr::k_unTrackedDeviceIndexInvalid || context->m_rleg_id == vr::k_unTrackedDeviceIndexInvalid || context->m_lleg_id == vr::k_unTrackedDeviceIndexInvalid || context->m_relbow_id == vr::k_unTrackedDeviceIndexInvalid || context->m_lelbow_id == vr::k_unTrackedDeviceIndexInvalid
 		|| context->m_rknee_id == vr::k_unTrackedDeviceIndexInvalid || context->m_lknee_id == vr::k_unTrackedDeviceIndexInvalid || context->m_chest_id == vr::k_unTrackedDeviceIndexInvalid)
 		std::this_thread::sleep_for(std::chrono::milliseconds(33));
 
@@ -303,14 +308,14 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 	uint32_t lelbow_id = context->m_lelbow_id;
 	uint32_t rknee_id = context->m_rknee_id;
 	uint32_t lknee_id = context->m_lknee_id;
-	
+
 
 	k4a_capture_t capture = nullptr;
 	k4abt_frame_t body_frame = nullptr;
 
 	if (k4abt_tracker_create(&context->m_calibration, ::K4ABT_TRACKER_CONFIG_DEFAULT, &tracker) == K4A_RESULT_SUCCEEDED)
 	{
-		k4abt_tracker_set_temporal_smoothing(tracker, 0.025F);
+		k4abt_tracker_set_temporal_smoothing(tracker, 0);
 
 		if (!context->IsOnline())
 		{
@@ -356,18 +361,25 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 		bool ret = false;
 		float lowestY = 1000;
 
+		bone_filter leftLegFilter, rightLegFilter, hipFilter, chestFilter, leftElbowFilter, rightElbowFilter, leftKneeFilter, rightKneeFilter;
+
+
+		clock_t lastTime;
+		lastTime = clock();
+
+
 
 		while (context->m_online)
 		{
-			time_t lastTime = time(NULL);
-			if (k4a_device_get_capture(device, &capture, K4A_WAIT_INFINITE) != K4A_WAIT_RESULT_SUCCEEDED) 
+
+			if (k4a_device_get_capture(device, &capture, K4A_WAIT_INFINITE) != K4A_WAIT_RESULT_SUCCEEDED)
 			{
 				updateData = true;
 				continue;
 			}
 			else
 			{
-				if (k4abt_tracker_enqueue_capture(tracker, capture, 16) != K4A_WAIT_RESULT_SUCCEEDED)
+				if (k4abt_tracker_enqueue_capture(tracker, capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 				{
 					k4a_capture_release(capture);
 					updateData = true;
@@ -375,7 +387,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 				}
 				else
 				{
-					if (k4abt_tracker_pop_result(tracker, &body_frame, 16) != K4A_WAIT_RESULT_SUCCEEDED)
+					if (k4abt_tracker_pop_result(tracker, &body_frame, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 					{
 						k4a_capture_release(capture);
 						updateData = true;
@@ -387,10 +399,9 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 						{
 							if (calibrationMem->update)
 								UpdateCalibration(hip_pose, rleg_pose, lleg_pose, relbow_pose, lelbow_pose, rknee_pose, lknee_pose, chest_pose);
-								if (!calibrationMem->autoSmooth)
-									k4abt_tracker_set_temporal_smoothing(tracker, calibrationMem->m_smoothing);
-							// ???TODO: put autoSmooth on a different thread for efficiency???
-							
+
+
+
 							for (int i = 0; i < num_bodies; i++)
 							{
 								k4abt_skeleton_t skeleton;
@@ -416,177 +427,63 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 								}
 								else
 								{
+									clock_t thisTime = clock();
+									float timePassed = float(thisTime - lastTime) / CLOCKS_PER_SEC;
 									float temp = 0;
-									//float vecDiff = 0;
-									
-									hip_pose.poseIsValid = true;
-									hip_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.w;
-									hip_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.z;
-									hip_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.x;
-									hip_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_PELVIS].orientation.wxyz.y;
-									
-									
-									hip_pose.vecVelocity[0] = ((temp = ((skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.z) / 1000)) - hip_pose.vecPosition[0]) / 0.06;
-									hip_pose.vecPosition[0] = temp;
-									hip_pose.vecVelocity[1] = ((temp = ((skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.x) / 1000)) - hip_pose.vecPosition[1]) / 0.06;
-									hip_pose.vecPosition[1] = temp;
-									hip_pose.vecVelocity[2] = ((temp = ((skeleton.joints[K4ABT_JOINT_PELVIS].position.xyz.y) / 1000)) - hip_pose.vecPosition[2]) / 0.06;
-									hip_pose.vecPosition[2] = temp;
+
+									k4abt_joint_t hip, lleg, rleg;
+
+
+									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
+										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
+										float temp;
+										bone_pose.poseIsValid = true;
+										bone_pose.qRotation.w = bone.orientation.wxyz.w;
+										bone_pose.qRotation.x = temp = bone.orientation.wxyz.z;
+										bone_pose.qRotation.y = bone.orientation.wxyz.x;
+										bone_pose.qRotation.z = bone.orientation.wxyz.y;
+										temp = bone_pose.vecPosition[0];
+										bone_pose.vecPosition[0] = (0.3 * (bone_pose.vecPosition[0] + (bone_pose.vecVelocity[0] * timePassed))) + (0.7 * (bonePrediction.position.xyz.z / 1000));
+										bone_pose.vecVelocity[0] = (bone_pose.vecPosition[0] - temp) / timePassed;
+										temp = bone_pose.vecPosition[1];
+										bone_pose.vecPosition[1] = (0.3 * (bone_pose.vecPosition[1] + (bone_pose.vecVelocity[1] * timePassed))) + (0.7 * (bonePrediction.position.xyz.x / 1000));
+										bone_pose.vecVelocity[1] = (bone_pose.vecPosition[1] - temp) / timePassed;
+										temp = bone_pose.vecPosition[2];
+										bone_pose.vecPosition[2] = (0.3 * (bone_pose.vecPosition[2] + (bone_pose.vecVelocity[2] * timePassed))) + (0.7 * (bonePrediction.position.xyz.y / 1000));
+										bone_pose.vecVelocity[2] = (bone_pose.vecPosition[2] - temp) / timePassed;
+									};
 
 									
+									std::thread hipBone(updateBone, std::ref(hipFilter), skeleton.joints[K4ABT_JOINT_PELVIS], std::ref(hip_pose), timePassed);
+									std::thread llegBone(updateBone, std::ref(leftLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_RIGHT], std::ref(rleg_pose), timePassed);
+									std::thread rlegBone(updateBone, std::ref(rightLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_LEFT], std::ref(lleg_pose), timePassed);
 
-									rleg_pose.poseIsValid = true;
-									rleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.w;
-									rleg_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.z;
-									rleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.x;
-									rleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].orientation.wxyz.y;
-
+									hipBone.join();
+									llegBone.join();
+									rlegBone.join();
 									
-									temp = rleg_pose.vecPosition[0];
-									rleg_pose.vecPosition[0] = (0.4 * (rleg_pose.vecPosition[0] + (rleg_pose.vecVelocity[0] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.z + skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.z) / 2000));
-									rleg_pose.vecVelocity[0] = (rleg_pose.vecPosition[0] - temp) / 0.06;
-									temp = rleg_pose.vecPosition[1];
-									rleg_pose.vecPosition[1] = (0.4 * (rleg_pose.vecPosition[1] + (rleg_pose.vecVelocity[1] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.x + skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.x) / 2000));
-									rleg_pose.vecVelocity[1] = (rleg_pose.vecPosition[1] -  temp) / 0.06;
-									temp = rleg_pose.vecPosition[2];
-									rleg_pose.vecPosition[2] = (0.4 * (rleg_pose.vecPosition[2] + (rleg_pose.vecVelocity[2] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y + skeleton.joints[K4ABT_JOINT_ANKLE_RIGHT].position.xyz.y) / 2000));
-									rleg_pose.vecVelocity[2] = (rleg_pose.vecPosition[2] - temp) / 0.06;
-									
-									/*rleg_pose.vecPosition[0] = (0.05 * rleg_pose.vecPosition[0]) + (0.45 * (rleg_pose.vecPosition[0] + (rleg_pose.vecVelocity[0] * 0.02))) + (0.5 * (temp = (skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.z / 1000)));
-									rleg_pose.vecVelocity[0] = (temp - rleg_pose.vecPosition[0]) / 0.06;
-									rleg_pose.vecPosition[1] = (0.05 * rleg_pose.vecPosition[1]) + (0.45 * (rleg_pose.vecPosition[1] + (rleg_pose.vecVelocity[1] * 0.02))) + (0.5 * (temp = (skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.x / 1000)));
-									rleg_pose.vecVelocity[1] = (temp - rleg_pose.vecPosition[1]) / 0.06;*/
-									
-									//velocity calculated by newPos - oldPos / seconds between two points
-									/*rleg_pose.vecVelocity[0] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.z  / 1000)) - rleg_pose.vecPosition[0]) / 0.06;
-									rleg_pose.vecPosition[0] = temp;
-									rleg_pose.vecVelocity[1] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.x / 1000)) - rleg_pose.vecPosition[1]) / 0.06;
-									rleg_pose.vecPosition[1] = temp;
-									rleg_pose.vecVelocity[2] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_RIGHT].position.xyz.y /1000 )) - rleg_pose.vecPosition[2]) / 0.06;
-									rleg_pose.vecPosition[2] = temp;*/
-
-									//update vectorChange for autoSmooth
-									if (calibrationMem->autoSmooth)
-										vectorChange += rleg_pose.vecVelocity[0] + rleg_pose.vecVelocity[1] + rleg_pose.vecVelocity[2];
-
-									float change = 0;
-									lleg_pose.poseIsValid = true;
-									lleg_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.w;
-									//lleg_pose.vecAngularVelocity[0] = ((temp = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.z) - lleg_pose.vecAngularVelocity[0]) / 0.06;
-									lleg_pose.qRotation.x = temp = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.z;
-									//lleg_pose.vecAngularVelocity[1] = ((temp = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.x) - lleg_pose.vecAngularVelocity[1]) / 0.06;
-									lleg_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.x;
-									//lleg_pose.vecAngularVelocity[2] = ((temp = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.y) - lleg_pose.vecAngularVelocity[2]) / 0.06;
-									lleg_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].orientation.wxyz.y;
-
-									temp = lleg_pose.vecPosition[0];
-									lleg_pose.vecPosition[0] = (0.4 * (lleg_pose.vecPosition[0] + (lleg_pose.vecVelocity[0] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.z + skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.z) / 2000));
-									lleg_pose.vecVelocity[0] = (lleg_pose.vecPosition[0] - temp) / 0.06;
-									temp = lleg_pose.vecPosition[1];
-									lleg_pose.vecPosition[1] = (0.4 * (lleg_pose.vecPosition[1] + (lleg_pose.vecVelocity[1] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.x + skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.x) / 2000));
-									lleg_pose.vecVelocity[1] = (lleg_pose.vecPosition[1] - temp) / 0.06;
-									temp = lleg_pose.vecPosition[2];
-									lleg_pose.vecPosition[2] = (0.4 * (lleg_pose.vecPosition[2] + (lleg_pose.vecVelocity[2] * 0.02))) + (0.6 * ((skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.y + skeleton.joints[K4ABT_JOINT_ANKLE_LEFT].position.xyz.y) / 2000));
-									lleg_pose.vecVelocity[2] = (lleg_pose.vecPosition[2] - temp) / 0.06;
-
-									
-									/*lleg_pose.vecVelocity[0] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.z / 1000)) - lleg_pose.vecPosition[0]) / 0.06;
-									lleg_pose.vecPosition[0] = temp;
-									lleg_pose.vecVelocity[1] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.x / 1000)) - lleg_pose.vecPosition[1]) / 0.06;
-									lleg_pose.vecPosition[1] = temp;
-									lleg_pose.vecVelocity[2] = ((temp = (skeleton.joints[K4ABT_JOINT_FOOT_LEFT].position.xyz.y / 1000)) - lleg_pose.vecPosition[2]) / 0.06;
-									lleg_pose.vecPosition[2] = temp;*/
-									
-									if (calibrationMem->autoSmooth)
-										vectorChange += lleg_pose.vecVelocity[0] + lleg_pose.vecVelocity[1] + lleg_pose.vecVelocity[2];
-
-									if (calibrationMem->moreTrackers) {
-										
-										chest_pose.poseIsValid = true;
-										chest_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].orientation.wxyz.w;
-										chest_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].orientation.wxyz.z;
-										chest_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].orientation.wxyz.x;
-										chest_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].orientation.wxyz.y;
-										chest_pose.vecPosition[0] = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].position.xyz.z / 1000;
-										chest_pose.vecPosition[1] = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].position.xyz.x / 1000;
-										chest_pose.vecPosition[2] = skeleton.joints[K4ABT_JOINT_SPINE_CHEST].position.xyz.y / 1000;
-
-
-										//elbow velocities are scaled to try and fix the inaccurate positional data
-										relbow_pose.poseIsValid = true;
-										relbow_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation.wxyz.w;
-										relbow_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation.wxyz.z;
-										relbow_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation.wxyz.x;
-										relbow_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation.wxyz.y;
-										relbow_pose.vecVelocity[0] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].position.xyz.z) / 1000)) - relbow_pose.vecPosition[0]) / 0.06;
-										relbow_pose.vecPosition[0] = temp;
-										relbow_pose.vecVelocity[1] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].position.xyz.x) / 1000)) - relbow_pose.vecPosition[1]) / 0.06;
-										relbow_pose.vecPosition[1] = temp;
-										relbow_pose.vecVelocity[2] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].position.xyz.y) / 1000)) - relbow_pose.vecPosition[2]) / 0.06;
-										relbow_pose.vecPosition[2] = temp;
-
-										lelbow_pose.poseIsValid = true;
-										lelbow_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation.wxyz.w;
-										lelbow_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation.wxyz.z;
-										lelbow_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation.wxyz.x;
-										lelbow_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation.wxyz.y;
-										lelbow_pose.vecVelocity[0] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].position.xyz.z) / 1000)) - lelbow_pose.vecPosition[0]) / 0.06;
-										lelbow_pose.vecPosition[0] = temp;
-										lelbow_pose.vecVelocity[1] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].position.xyz.x) / 1000)) - lelbow_pose.vecPosition[1]) / 0.06;
-										lelbow_pose.vecPosition[1] = temp;
-										lelbow_pose.vecVelocity[2] = 1.2 * ((temp = ((skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].position.xyz.y) / 1000)) - lelbow_pose.vecPosition[2]) / 0.06;
-										lelbow_pose.vecPosition[2] = temp;
-
-										
-
-										lknee_pose.poseIsValid = true;
-										lknee_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_KNEE_LEFT].orientation.wxyz.w;
-										lknee_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_KNEE_LEFT].orientation.wxyz.z;
-										lknee_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_KNEE_LEFT].orientation.wxyz.x;
-										lknee_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_KNEE_LEFT].orientation.wxyz.y;
-										lknee_pose.vecVelocity[0] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_LEFT].position.xyz.z) / 1000)) - lknee_pose.vecPosition[0]) / 0.06;
-										lknee_pose.vecPosition[0] = temp;
-										lknee_pose.vecVelocity[1] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_LEFT].position.xyz.x) / 1000)) - lknee_pose.vecPosition[1]) / 0.06;
-										lknee_pose.vecPosition[1] = temp;
-										lknee_pose.vecVelocity[2] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_LEFT].position.xyz.y) / 1000)) - lknee_pose.vecPosition[2]) / 0.06;
-										lknee_pose.vecPosition[2] = temp;
-
-										rknee_pose.poseIsValid = true;
-										rknee_pose.qRotation.w = skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].orientation.wxyz.w;
-										rknee_pose.qRotation.x = skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].orientation.wxyz.z;
-										rknee_pose.qRotation.y = skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].orientation.wxyz.x;
-										rknee_pose.qRotation.z = skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].orientation.wxyz.y;
-										rknee_pose.vecVelocity[0] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].position.xyz.z) / 1000)) - rknee_pose.vecPosition[0]) / 0.06;
-										rknee_pose.vecPosition[0] = temp;
-										rknee_pose.vecVelocity[1] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].position.xyz.x) / 1000)) - rknee_pose.vecPosition[1]) / 0.06;
-										rknee_pose.vecPosition[1] = temp;
-										rknee_pose.vecVelocity[2] = ((temp = ((skeleton.joints[K4ABT_JOINT_KNEE_RIGHT].position.xyz.y) / 1000)) - rknee_pose.vecPosition[2]) / 0.06;
-										rknee_pose.vecPosition[2] = temp;
-
-										
-									}
-									
-
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
+
 									if (calibrationMem->moreTrackers) {
+										std::thread chestBone(updateBone, std::ref(chestFilter), skeleton.joints[K4ABT_JOINT_SPINE_CHEST], std::ref(chest_pose), timePassed);
+										std::thread lelbowBone(updateBone, std::ref(leftElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_LEFT], std::ref(lelbow_pose), timePassed);
+										std::thread relbowBone(updateBone, std::ref(rightElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT], std::ref(relbow_pose), timePassed);
+										std::thread lkneeBone(updateBone, std::ref(leftKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_LEFT], std::ref(lknee_pose), timePassed);
+										std::thread rkneeBone(updateBone, std::ref(rightKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_RIGHT], std::ref(rknee_pose), timePassed);
+										chestBone.join();
+										lelbowBone.join();
+										relbowBone.join();
+										lkneeBone.join();
+										rkneeBone.join();
 										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(chest_id, chest_pose, sizeof(vr::DriverPose_t));
 										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(relbow_id, relbow_pose, sizeof(vr::DriverPose_t));
 										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lelbow_id, lelbow_pose, sizeof(vr::DriverPose_t));
 										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rknee_id, rknee_pose, sizeof(vr::DriverPose_t));
 										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lknee_id, lknee_pose, sizeof(vr::DriverPose_t));
 									}
-									
-
-									if (calibrationMem->autoSmooth) {
-										k4abt_tracker_set_temporal_smoothing(tracker, (((vectorChange / maxChange) > calibrationMem->m_smoothing) ? (smoothing -= 0.85 * (smoothing)) : smoothing += 0.3 * (1 - (double)smoothing)));
-										vectorChange = 0;
-										maxChange = max(vectorChange, (maxChange - (maxChange * 0.98)));
-									}
-									
-										
-										
+									lastTime = clock();
 								}
 							}
 						}
@@ -595,32 +492,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 				}
 				k4a_capture_release(capture);
 			}
-			if (updateData) {
-				float temp = 0;
-
-				hip_pose.poseIsValid = true;
-				hip_pose.vecPosition[0] = hip_pose.vecPosition[0] + (hip_pose.vecVelocity[0] * 0.02);
-				hip_pose.vecPosition[1] = hip_pose.vecPosition[1] + (hip_pose.vecVelocity[1] * 0.02);
-				hip_pose.vecPosition[2] = hip_pose.vecPosition[2] + (hip_pose.vecVelocity[2] * 0.02);
-
-				rleg_pose.poseIsValid = true;
-				//velocity calculated by newPos - oldPos / seconds between two points
-				
-				rleg_pose.vecPosition[0] = rleg_pose.vecPosition[0] + (rleg_pose.vecAcceleration[0] * 0.02); 
-				rleg_pose.vecPosition[1] = rleg_pose.vecPosition[1] + (rleg_pose.vecAcceleration[1] * 0.02);
-				rleg_pose.vecPosition[2] = rleg_pose.vecPosition[2] + (rleg_pose.vecAcceleration[2] * 0.02);
-
-				//update vectorChange for autoSmooth
-				
-
-				lleg_pose.poseIsValid = true;
-				lleg_pose.vecPosition[0] = lleg_pose.vecPosition[0] + (lleg_pose.vecAcceleration[0] * 0.02);
-				lleg_pose.vecPosition[1] = lleg_pose.vecPosition[1] + (lleg_pose.vecAcceleration[1] * 0.02);
-				lleg_pose.vecPosition[2] = lleg_pose.vecPosition[2] + (lleg_pose.vecAcceleration[2] * 0.02);
-				updateData = false;
-			}
 		}
-
 		k4abt_tracker_destroy(tracker);
 	}
 }
@@ -629,7 +501,7 @@ void K4ABoneProvider::setup_bone(uint32_t unObjectId, k4abt_joint_id_t bone)
 {
 	vr::DriverPose_t bone_pose = { 0 };
 
-	bone_pose.poseTimeOffset = 0.05F;
+	bone_pose.poseTimeOffset = 0.11F;
 
 	bone_pose.qDriverFromHeadRotation.w = 1.F;
 	bone_pose.qDriverFromHeadRotation.x = 0.F;

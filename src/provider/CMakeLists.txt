@@ -2,7 +2,8 @@
 add_library(k4a_driver_provider STATIC
 	"bone_provider.cpp"
 	"bone_provider.h"
-)
+ "SimpleKalmanFilter.h"
+ "SimpleKalmanFilter.cpp" "bone_filter.h" "bone_filter.cpp")
 
 target_include_directories(k4a_driver_provider PRIVATE
 	"${OPENVR_INCLUDE_DIR}"
