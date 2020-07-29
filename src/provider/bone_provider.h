@@ -24,13 +24,16 @@ typedef struct _joint_offset
 typedef struct _calibration_data
 {
 	bool update;
-	bool autoSmooth;
 	bool moreTrackers;
+	// TODO: make this setting togglable for less powerful GPU setups. 
+	// Right now camera is set to 15fps by default as seen in https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/514
+	bool lessCameraFPS;
 
 	float x;
 	float y;
 	float z;
 	float m_smoothing;
+	float fps;
 
 	joint_offset_t rotOffset;
 } calibration_data_t;

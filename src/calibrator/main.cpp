@@ -358,6 +358,7 @@ int main(int, char**)
                 quat.x,
                 quat.y,
                 quat.z);
+            ImGui::Text("fps: %.4f", calibrationData->fps);
 
             ImGui::RadioButton("X", &X, 0);
             ImGui::RadioButton("Y", &X, 1);

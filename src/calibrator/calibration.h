@@ -21,13 +21,15 @@ namespace Calibration {
 	typedef struct _calibration_data
 	{
 		bool update;
-		bool autoSmooth;
 		bool moreTrackers;
+		// TODO see bone_provider.h for details
+		bool lessCameraFPS;
 
 		float x;
 		float y;
 		float z;
 		float m_smoothing;
+		float fps;
 
 		joint_offset_t rotOffset;
 	} calibration_data_t;
