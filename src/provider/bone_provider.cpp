@@ -358,10 +358,11 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 		bool threadCanUpdate = false;
 		bool ret = false;
 		float lowestY = 1000;
+		int threadPoolCount = 2;
 
 		bone_filter leftLegFilter, rightLegFilter, hipFilter, chestFilter, leftElbowFilter, rightElbowFilter, leftKneeFilter, rightKneeFilter;
 
-
+		ctpl::thread_pool p(threadPoolCount);
 		clock_t lastTime;
 		lastTime = clock();
 
@@ -429,7 +430,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 									k4abt_joint_t hip, lleg, rleg;
 
 									// lambda update that updates a bone's position and rotation
-									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
+									auto updateBone = [](int id, bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
 										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
 										float temp;
 										bone_pose.poseIsValid = true;
@@ -449,30 +450,25 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 										bone_pose.poseTimeOffset = timePassed;
 									};
 
-									
-									std::thread hipBone(updateBone, std::ref(hipFilter), skeleton.joints[K4ABT_JOINT_PELVIS], std::ref(hip_pose), timePassed);
-									std::thread llegBone(updateBone, std::ref(leftLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_RIGHT], std::ref(rleg_pose), timePassed);
-									std::thread rlegBone(updateBone, std::ref(rightLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_LEFT], std::ref(lleg_pose), timePassed);
+									p.push(updateBone, std::ref(hipFilter), skeleton.joints[K4ABT_JOINT_PELVIS], std::ref(hip_pose), timePassed);
+									p.push(updateBone, std::ref(leftLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_RIGHT], std::ref(rleg_pose), timePassed);
+									p.push(updateBone, std::ref(rightLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_LEFT], std::ref(lleg_pose), timePassed);
 
-									hipBone.join();
-									llegBone.join();
-									rlegBone.join();
+									while(p.n_idle() != threadPoolCount) 
+										std::this_thread::sleep_for(std::chrono::milliseconds(1));
 									
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
 									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
 
 									if (calibrationMem->moreTrackers) {
-										//std::thread chestBone(updateBone, std::ref(chestFilter), skeleton.joints[K4ABT_JOINT_SPINE_CHEST], std::ref(chest_pose), timePassed);
-										//std::thread lelbowBone(updateBone, std::ref(leftElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_LEFT], std::ref(lelbow_pose), timePassed);
-										//std::thread relbowBone(updateBone, std::ref(rightElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT], std::ref(relbow_pose), timePassed);
-										std::thread lkneeBone(updateBone, std::ref(leftKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_LEFT], std::ref(lknee_pose), timePassed);
-										std::thread rkneeBone(updateBone, std::ref(rightKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_RIGHT], std::ref(rknee_pose), timePassed);
-										//chestBone.join();
-										//lelbowBone.join();
-										//relbowBone.join();
-										lkneeBone.join();
-										rkneeBone.join();
+										//p.push(updateBone, std::ref(chestFilter), skeleton.joints[K4ABT_JOINT_SPINE_CHEST], std::ref(chest_pose), timePassed);
+										//p.push(updateBone, std::ref(leftElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_LEFT], std::ref(lelbow_pose), timePassed);
+										//p.push(updateBone, std::ref(rightElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT], std::ref(relbow_pose), timePassed);
+										p.push(updateBone, std::ref(leftKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_LEFT], std::ref(lknee_pose), timePassed);
+										p.push(updateBone, std::ref(rightKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_RIGHT], std::ref(rknee_pose), timePassed);
+										while (p.n_idle() != threadPoolCount)
+											std::this_thread::sleep_for(std::chrono::milliseconds(1));
 										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(chest_id, chest_pose, sizeof(vr::DriverPose_t));
 										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(relbow_id, relbow_pose, sizeof(vr::DriverPose_t));
 										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lelbow_id, lelbow_pose, sizeof(vr::DriverPose_t));

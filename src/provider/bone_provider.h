@@ -8,8 +8,10 @@
 
 #include <openvr_driver.h>
 
+#include "../extern/ctpl/ctpl_stl.h"
 #include <thread>
 #include <cmath>
+#include "bone_filter.h"
 
 typedef void(*DriverLog_t)(const char* pMsgFormat, ...);
 
