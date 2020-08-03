@@ -11,6 +11,7 @@
 
 
 
+
 static TCHAR calibrationMemName[] = TEXT("BoneCalibrationMemmap");
 
 static HANDLE calibrationMemHandle = INVALID_HANDLE_VALUE;
@@ -169,7 +170,7 @@ K4ABoneProviderError K4ABoneProvider::Stop()
 	return m_error;
 }
 
-void UpdateCalibration(vr::DriverPose_t& waist, vr::DriverPose_t& rightFoot, vr::DriverPose_t& leftFoot, vr::DriverPose_t& rightElbow, vr::DriverPose_t& leftElbow, vr::DriverPose_t& rightKnee, vr::DriverPose_t& leftKnee, vr::DriverPose_t& chest)
+void UpdateCalibration(vr::DriverPose_t *poses)
 {
 	// TODO:
 	// if default values are changed, save changes to file
@@ -185,105 +186,20 @@ void UpdateCalibration(vr::DriverPose_t& waist, vr::DriverPose_t& rightFoot, vr:
 	float qy = calibrationMem->rotOffset.y;
 	float qz = calibrationMem->rotOffset.z;
 
-	waist.vecWorldFromDriverTranslation[0] = x;
-	waist.vecWorldFromDriverTranslation[1] = y;
-	waist.vecWorldFromDriverTranslation[2] = z;
+	// updates calibration for every bone pose
+	for (int i = 0; i < 8; i++) {
+		poses[i].vecWorldFromDriverTranslation[0] = x;
+		poses[i].vecWorldFromDriverTranslation[1] = y;
+		poses[i].vecWorldFromDriverTranslation[2] = z;
 
-	rightFoot.vecWorldFromDriverTranslation[0] = x;
-	rightFoot.vecWorldFromDriverTranslation[1] = y;
-	rightFoot.vecWorldFromDriverTranslation[2] = z;
-
-	leftFoot.vecWorldFromDriverTranslation[0] = x;
-	leftFoot.vecWorldFromDriverTranslation[1] = y;
-	leftFoot.vecWorldFromDriverTranslation[2] = z;
-
-	rightElbow.vecWorldFromDriverTranslation[0] = x;
-	rightElbow.vecWorldFromDriverTranslation[1] = y;
-	rightElbow.vecWorldFromDriverTranslation[2] = z;
-
-	leftElbow.vecWorldFromDriverTranslation[0] = x;
-	leftElbow.vecWorldFromDriverTranslation[1] = y;
-	leftElbow.vecWorldFromDriverTranslation[2] = z;
-
-	rightKnee.vecWorldFromDriverTranslation[0] = x;
-	rightKnee.vecWorldFromDriverTranslation[1] = y;
-	rightKnee.vecWorldFromDriverTranslation[2] = z;
-
-	leftKnee.vecWorldFromDriverTranslation[0] = x;
-	leftKnee.vecWorldFromDriverTranslation[1] = y;
-	leftKnee.vecWorldFromDriverTranslation[2] = z;
-
-	chest.vecWorldFromDriverTranslation[0] = x;
-	chest.vecWorldFromDriverTranslation[1] = y;
-	chest.vecWorldFromDriverTranslation[2] = z;
-
-
-	waist.qWorldFromDriverRotation.w = qw;
-	waist.qWorldFromDriverRotation.x = qx;
-	waist.qWorldFromDriverRotation.y = qy;
-	waist.qWorldFromDriverRotation.z = qz;
-
-	rightFoot.qWorldFromDriverRotation.w = qw;
-	rightFoot.qWorldFromDriverRotation.x = qx;
-	rightFoot.qWorldFromDriverRotation.y = qy;
-	rightFoot.qWorldFromDriverRotation.z = qz;
-
-	leftFoot.qWorldFromDriverRotation.w = qw;
-	leftFoot.qWorldFromDriverRotation.x = qx;
-	leftFoot.qWorldFromDriverRotation.y = qy;
-	leftFoot.qWorldFromDriverRotation.z = qz;
-
-	rightElbow.qWorldFromDriverRotation.w = qw;
-	rightElbow.qWorldFromDriverRotation.x = qx;
-	rightElbow.qWorldFromDriverRotation.y = qy;
-	rightElbow.qWorldFromDriverRotation.z = qz;
-
-	leftElbow.qWorldFromDriverRotation.w = qw;
-	leftElbow.qWorldFromDriverRotation.x = qx;
-	leftElbow.qWorldFromDriverRotation.y = qy;
-	leftElbow.qWorldFromDriverRotation.z = qz;
-
-	rightKnee.qWorldFromDriverRotation.w = qw;
-	rightKnee.qWorldFromDriverRotation.x = qx;
-	rightKnee.qWorldFromDriverRotation.y = qy;
-	rightKnee.qWorldFromDriverRotation.z = qz;
-
-	leftKnee.qWorldFromDriverRotation.w = qw;
-	leftKnee.qWorldFromDriverRotation.x = qx;
-	leftKnee.qWorldFromDriverRotation.y = qy;
-	leftKnee.qWorldFromDriverRotation.z = qz;
-
-
-	chest.qWorldFromDriverRotation.w = qw;
-	chest.qWorldFromDriverRotation.x = qx;
-	chest.qWorldFromDriverRotation.y = qy;
-	chest.qWorldFromDriverRotation.z = qz;
+		poses[i].qWorldFromDriverRotation.w = qw;
+		poses[i].qWorldFromDriverRotation.x = qx;
+		poses[i].qWorldFromDriverRotation.y = qy;
+		poses[i].qWorldFromDriverRotation.z = qz;
+	}
 
 	calibrationMem->update = false;
 }
-
-/*
-void multiThreadedProcess(vr::DriverPose_t* rleg_pose, bool* threadDataReady, bool* ret)
-{
-	// can potentially add a acceleration calculation here
-	// double rlegVecAcceleration[3] = { 0, 0, 0 };
-
-	while (!ret) {
-		if (!*threadDataReady) {
-			rleg_pose->poseIsValid = true;
-			//velocity calculated by newPos - oldPos / seconds between two points
-			rleg_pose->vecPosition[0] = rleg_pose->vecPosition[0] + (0.032 * rleg_pose->vecVelocity[0]);
-			rleg_pose->vecVelocity[0] = rleg_pose->vecVelocity[0] * 0.95;
-			rleg_pose->vecPosition[1] = rleg_pose->vecPosition[1] + (0.032 * rleg_pose->vecVelocity[0]);
-			rleg_pose->vecVelocity[1] = rleg_pose->vecVelocity[1] * 0.95;
-			rleg_pose->vecPosition[2] = rleg_pose->vecPosition[2] + (0.032 * rleg_pose->vecVelocity[0]);
-			rleg_pose->vecVelocity[2] = rleg_pose->vecVelocity[2] * 0.95;
-			*threadDataReady = true;
-		}
-	}
-
-}
-*/
 
 void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 {
@@ -298,14 +214,15 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 	k4a_device_t device = context->m_device;
 	k4abt_tracker_t tracker;
 
-	uint32_t hip_id = context->m_hip_id;
-	uint32_t rleg_id = context->m_rleg_id;
-	uint32_t lleg_id = context->m_lleg_id;
-	uint32_t chest_id = context->m_chest_id;
-	uint32_t relbow_id = context->m_relbow_id;
-	uint32_t lelbow_id = context->m_lelbow_id;
-	uint32_t rknee_id = context->m_rknee_id;
-	uint32_t lknee_id = context->m_lknee_id;
+	uint32_t ids[8];
+	ids[0] = context->m_hip_id;
+	ids[1] = context->m_lleg_id;
+	ids[2] = context->m_rleg_id;
+	ids[3] = context->m_chest_id;
+	ids[4] = context->m_relbow_id;
+	ids[5] = context->m_lelbow_id;
+	ids[6] = context->m_rknee_id;
+	ids[7] = context->m_lknee_id;
 
 
 	k4a_capture_t capture = nullptr;
@@ -328,41 +245,34 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 			context->m_rknee_pose.deviceIsConnected = true;
 			context->m_lknee_pose.deviceIsConnected = true;
 
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, context->m_hip_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, context->m_rleg_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, context->m_lleg_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, context->m_chest_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, context->m_relbow_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, context->m_lelbow_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, context->m_rknee_pose, sizeof(vr::DriverPose_t));
-			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, context->m_lknee_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[0], context->m_hip_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[1], context->m_lleg_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[2], context->m_rleg_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[3], context->m_chest_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[4], context->m_relbow_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[5], context->m_lelbow_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[6], context->m_rknee_pose, sizeof(vr::DriverPose_t));
+			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[7], context->m_lknee_pose, sizeof(vr::DriverPose_t));
 		}
 
 		uint64_t last_timestamp = 0;
 
 		// recreate stack copies from the calibrated baseline pose
-		vr::DriverPose_t hip_pose = context->m_hip_pose;
-		vr::DriverPose_t rleg_pose = context->m_rleg_pose;
-		vr::DriverPose_t lleg_pose = context->m_lleg_pose;
-		vr::DriverPose_t chest_pose = context->m_chest_pose;
-		vr::DriverPose_t relbow_pose = context->m_relbow_pose;
-		vr::DriverPose_t lelbow_pose = context->m_lelbow_pose;
-		vr::DriverPose_t rknee_pose = context->m_rknee_pose;
-		vr::DriverPose_t lknee_pose = context->m_lknee_pose;
-		double rotationChange;
-		double vectorChange = 0.0;
-		double maxChange = 1.0;
+		vr::DriverPose_t poses[] = { context->m_hip_pose, context->m_lleg_pose, context->m_rleg_pose, context->m_rleg_pose, 
+			context->m_chest_pose, context->m_relbow_pose, context->m_lelbow_pose, context->m_rknee_pose, context->m_lknee_pose};
+
+		// create array of jointIDs for array access
+		k4abt_joint_id_t jointIDs[] = { K4ABT_JOINT_PELVIS, K4ABT_JOINT_FOOT_LEFT, K4ABT_JOINT_FOOT_RIGHT, K4ABT_JOINT_SPINE_CHEST, 
+		K4ABT_JOINT_ELBOW_RIGHT, K4ABT_JOINT_ELBOW_LEFT, K4ABT_JOINT_KNEE_RIGHT, K4ABT_JOINT_KNEE_LEFT};
+		
+
+
+		
 		float smoothing = 0.0f;
 		bool updateData = false;
-		bool threadDataReady = true;
-		bool threadCanUpdate = false;
-		bool ret = false;
-		float lowestY = 1000;
-		int threadPoolCount = 2;
-
-		bone_filter leftLegFilter, rightLegFilter, hipFilter, chestFilter, leftElbowFilter, rightElbowFilter, leftKneeFilter, rightKneeFilter;
-
-		ctpl::thread_pool p(threadPoolCount);
+		// create bone filter for each bone
+		bone_filter filters[8];
+		// initialize time variable
 		clock_t lastTime;
 		lastTime = clock();
 
@@ -394,43 +304,25 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 						if (int num_bodies = k4abt_frame_get_num_bodies(body_frame) != 0)
 						{
 							if (calibrationMem->update)
-								UpdateCalibration(hip_pose, rleg_pose, lleg_pose, relbow_pose, lelbow_pose, rknee_pose, lknee_pose, chest_pose);
-
-
+								UpdateCalibration(poses);
 
 							for (int i = 0; i < num_bodies; i++)
 							{
 								k4abt_skeleton_t skeleton;
 								if (k4abt_frame_get_body_skeleton(body_frame, i, &skeleton) != K4A_RESULT_SUCCEEDED)
 								{
-									hip_pose.poseIsValid = false;
-									rleg_pose.poseIsValid = false;
-									lleg_pose.poseIsValid = false;
-									chest_pose.poseIsValid = false;
-									relbow_pose.poseIsValid = false;
-									lelbow_pose.poseIsValid = false;
-									rknee_pose.poseIsValid = false;
-									lknee_pose.poseIsValid = false;
-
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(chest_id, chest_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(relbow_id, relbow_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lelbow_id, lelbow_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rknee_id, rknee_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lknee_id, lknee_pose, sizeof(vr::DriverPose_t));
+									for (int i = 0; i < 8; i++) {
+										poses[i].poseIsValid = false;
+										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[i], poses[i], sizeof(vr::DriverPose_t));
+									}
 								}
 								else
 								{
 									clock_t thisTime = clock();
 									float timePassed = float(thisTime - lastTime) / CLOCKS_PER_SEC;
-									float temp = 0;
-
-									k4abt_joint_t hip, lleg, rleg;
 
 									// lambda update that updates a bone's position and rotation
-									auto updateBone = [](int id, bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
+									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
 										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
 										float temp;
 										bone_pose.poseIsValid = true;
@@ -450,31 +342,21 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 										bone_pose.poseTimeOffset = timePassed;
 									};
 
-									p.push(updateBone, std::ref(hipFilter), skeleton.joints[K4ABT_JOINT_PELVIS], std::ref(hip_pose), timePassed);
-									p.push(updateBone, std::ref(leftLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_RIGHT], std::ref(rleg_pose), timePassed);
-									p.push(updateBone, std::ref(rightLegFilter), skeleton.joints[K4ABT_JOINT_FOOT_LEFT], std::ref(lleg_pose), timePassed);
-
-									while(p.n_idle() != threadPoolCount) 
-										std::this_thread::sleep_for(std::chrono::milliseconds(1));
-									
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(hip_id, hip_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rleg_id, rleg_pose, sizeof(vr::DriverPose_t));
-									vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lleg_id, lleg_pose, sizeof(vr::DriverPose_t));
-
 									if (calibrationMem->moreTrackers) {
-										//p.push(updateBone, std::ref(chestFilter), skeleton.joints[K4ABT_JOINT_SPINE_CHEST], std::ref(chest_pose), timePassed);
-										//p.push(updateBone, std::ref(leftElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_LEFT], std::ref(lelbow_pose), timePassed);
-										//p.push(updateBone, std::ref(rightElbowFilter), skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT], std::ref(relbow_pose), timePassed);
-										p.push(updateBone, std::ref(leftKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_LEFT], std::ref(lknee_pose), timePassed);
-										p.push(updateBone, std::ref(rightKneeFilter), skeleton.joints[K4ABT_JOINT_KNEE_RIGHT], std::ref(rknee_pose), timePassed);
-										while (p.n_idle() != threadPoolCount)
-											std::this_thread::sleep_for(std::chrono::milliseconds(1));
-										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(chest_id, chest_pose, sizeof(vr::DriverPose_t));
-										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(relbow_id, relbow_pose, sizeof(vr::DriverPose_t));
-										//vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lelbow_id, lelbow_pose, sizeof(vr::DriverPose_t));
-										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(rknee_id, rknee_pose, sizeof(vr::DriverPose_t));
-										vr::VRServerDriverHost()->TrackedDevicePoseUpdated(lknee_id, lknee_pose, sizeof(vr::DriverPose_t));
+										#pragma omp parallel for
+										for (int i = 0; i < 8; i++) {
+											updateBone(std::ref(filters[i]), skeleton.joints[jointIDs[i]], std::ref(poses[i]), timePassed);
+											vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[i], poses[i], sizeof(vr::DriverPose_t));
+										}
 									}
+									else {
+										#pragma omp parallel for
+										for (int i = 0; i < 3; i++) {
+											updateBone(std::ref(filters[i]), skeleton.joints[jointIDs[i]], std::ref(poses[i]), timePassed);
+											vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[i], poses[i], sizeof(vr::DriverPose_t));
+										}
+									}
+
 									lastTime = clock();
 									calibrationMem->fps = 1 / timePassed;
 								}

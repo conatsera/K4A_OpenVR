@@ -5,10 +5,7 @@
 #include "k4a/k4a.h"
 #include "k4abt.h"
 #include "k4abttypes.h"
-
 #include <openvr_driver.h>
-
-#include "../extern/ctpl/ctpl_stl.h"
 #include <thread>
 #include <cmath>
 #include "bone_filter.h"
@@ -143,6 +140,7 @@ private:
 	k4a_device_configuration_t m_device_config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
 	k4a_calibration_t m_calibration = { 0 };
 	float m_smoothing_rate = 0.1F;
+	k4abt_skeleton_t skeleton;
 
 	K4ABoneProviderError m_error = BONE_PROVIDER_NO_ERROR;
 
