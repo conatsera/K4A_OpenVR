@@ -1,18 +1,26 @@
-﻿# CMakeList.txt : CMake project for K4A OpenVR, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.14)
+add_library(k4a_openvr STATIC
+    watchdog.cc
+    driver.cc
+    provider.cc
+    driverlog.cc
+)
 
-add_subdirectory("driver")
+target_include_directories(k4a_openvr
+    PUBLIC
+        "${OPENVR_INCLUDE_DIR}"
+        "${K4A_INCLUDE_DIRS}"
+)
 
-add_subdirectory("provider")
+target_link_libraries(k4a_openvr
+    PUBLIC
+        "${OPENVR_LIBRARIES}"
+        "${K4A_LIBS}"
+        ${GRPC_LIBS}
+        calibration_grpc_proto
+)
 
-#add_subdirectory("calibrator")
+add_library(driver_k4a_openvr SHARED dllmain.cc)
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-	add_subdirectory("windows")
-elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-	#add_subdirectory("linux") TODO
-else()
-    message(FATAL_ERROR "Unknown system: ${CMAKE_SYSTEM_NAME}")
-endif()
+target_link_libraries(driver_k4a_openvr k4a_openvr)
+
+install(TARGETS driver_k4a_openvr DESTINATION k4a_openvr/bin/win64)

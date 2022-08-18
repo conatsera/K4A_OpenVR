@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package calibration;
+
+message SettingsUpdateRequest {
+    enum ProcessingMode {
+        DEFAULT = 0;
+        CPU = 1;
+        CUDA = 2;
+        TENSORRT = 3;
+        DIRECTML = 4;
+    }
+
+    enum DepthResolution {
+        NFOV_2X2BINNED = 0;
+        NFOV_UNBINNED = 1;
+        WFOV_2X2BINNED = 2;
+        WFOV_UNBINNED = 3;
+    }
+
+    ProcessingMode mode = 1;
+    DepthResolution depth_res = 2;
+    float smoothing = 3;
+    bool lite = 4;
+
+}
+
+message SettingsGetRequest {}
+
+message SettingsReply {
+    bool success = 1;
+}
+
+message PauseResumeRequest {}
+message PauseResumeReply {
+    bool paused = 1;
+}
+
+service Settings {
+    rpc Get (SettingsGetRequest) returns (SettingsUpdateRequest) {}
+    rpc Update (SettingsUpdateRequest) returns (SettingsReply) {}
+    rpc PauseResume (PauseResumeRequest) returns (PauseResumeReply) {}
+}
+
+message Vec3 {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message Quat {
+    double w = 1;
+    double x = 2;
+    double y = 3;
+    double z = 4;
+}
+
+message Pose {
+    Vec3 pos = 1;
+    Quat rot = 2;
+}
+
+message DriverMatrix4 {
+    float m00 = 1;
+    float m01 = 2;
+    float m02 = 3;
+    float m03 = 4;
+
+    float m10 = 5;
+    float m11 = 6;
+    float m12 = 7;
+    float m13 = 8;
+
+    float m20 = 9;
+    float m21 = 10;
+    float m22 = 11;
+    float m23 = 12;
+}
+
+message DriverPose {
+    DriverMatrix4 pose = 1;
+    uint64 ts = 2;
+}
+
+message K4ABTPose {
+    Pose pose = 1;
+    uint64 dev_ts = 2;
+    uint64 sys_ts = 3;
+}
+
+message ImuSample {
+    Vec3 sample = 1;
+    uint64 ts = 2;
+}
+
+message CalibrationData {
+    DriverPose hmd = 1;
+
+    K4ABTPose head = 2;
+}
+
+message CalibrationDataRequest {}
+message CalibrationDataReply {
+    bool success = 1;
+    ImuSample acc = 2;
+    ImuSample gyro = 3;
+    CalibrationData data = 4;
+}
+
+message UpdateCalibrationRequest {
+    Quat q_world_from_driver_rotation = 1;
+    Vec3 vec_world_from_driver_translation = 2;
+}
+message UpdateCalibrationReply {
+    bool success = 1;
+}
+
+service Calibration {
+    rpc GetCalibrationData (CalibrationDataRequest) returns (CalibrationDataReply) {}
+    rpc UpdateCalibration (UpdateCalibrationRequest) returns (UpdateCalibrationReply) {}
+
+    rpc GetPoseStream (CalibrationDataRequest) returns (stream CalibrationData) {}
+    rpc StopPoseStream (CalibrationDataRequest) returns (UpdateCalibrationReply) {}
+}

@@ -1,6 +1,6 @@
 [submodule "extern/openvr/src"]
 	path = extern/openvr/src
 	url = https://github.com/ValveSoftware/openvr.git
-[submodule "extern/imgui/src"]
-	path = extern/imgui/src
-	url = https://github.com/ocornut/imgui.git
+[submodule "extern/eigen"]
+	path = extern/eigen
+	url = https://gitlab.com/libeigen/eigen.git

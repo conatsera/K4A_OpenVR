@@ -8,7 +8,7 @@ Locates the K4A redistributables and libraries. Both SDK and body tracking
 are searched
 #]=======================================================================]
 if (NOT DEFINED )
-set(K4A_SDK_VERSION "v1.4.0")
+set(K4A_SDK_VERSION "v1.4.1")
 endif()
 if (NOT DEFINED ${K4A_SDK_ROOT})
 find_path(K4A_SDK_ROOT
@@ -38,10 +38,10 @@ find_path(K4ABT_ROOT
 set(K4ABT_ROOT "${K4ABT_ROOT}/Azure Kinect Body Tracking SDK")
 endif()
 
-set(K4A_SDK_INCLUDE "${K4A_SDK_ROOT}/sdk/include")
-set(K4ABT_SDK_INCLUDE "${K4ABT_ROOT}/sdk/include")
+set(K4A_INCLUDE "${K4A_SDK_ROOT}/sdk/include")
+set(K4ABT_INCLUDE "${K4ABT_ROOT}/sdk/include")
 
-find_library(K4A_SDK
+find_library(K4A_LIB
 	NAMES
 		k4a
 	PATHS
@@ -49,7 +49,7 @@ find_library(K4A_SDK
 		"${K4A_SDK_ROOT}/sdk/linux_clang/amd64/release/lib"
 	NO_DEFAULT_PATH)
 
-find_library(K4ABT_SDK
+find_library(K4ABT_LIB
 	NAMES
 		k4abt
 	PATHS
@@ -57,8 +57,16 @@ find_library(K4ABT_SDK
 		"${K4ABT_ROOT}/lib" # TODO: Determine linux package structure
 	NO_DEFAULT_PATH)
 
-set(K4A_INCLUDE_DIRS "${K4A_SDK_INCLUDE}" "${K4ABT_SDK_INCLUDE}")
-set(K4A_LIBRARIES "${K4A_SDK}" "${K4ABT_SDK}")
+find_library(K4ARECORD_LIB
+	NAMES
+		k4arecord
+	PATHS
+		"${K4A_SDK_ROOT}/sdk/windows-desktop/amd64/release/lib"
+		"${K4A_SDK_ROOT}/sdk/linux_clang/amd64/release/lib"
+	NO_DEFAULT_PATH)
+
+set(K4A_INCLUDE_DIRS "${K4A_INCLUDE}" "${K4ABT_INCLUDE}")
+set(K4A_LIBS "${K4A_LIB}" "${K4ABT_LIB}")
 
 find_file(K4A_DLL
 	NAMES
